@@ -1,13 +1,13 @@
 ################################################################################
-# Boot0 (mini-boot) for Hi3516A / Hi3516D, ARMv7-a
+# Boot0 (mini-boot) for Hi3536DV100, ARMv7-a
 ################################################################################
 PWD                = $(shell pwd)
 HW_CROSS_COMPILE   = $(CROSS_COMPILE)
 BOOT_TOPDIR       ?= $(PWD)/../../../../../../
 BOOT_OUTDIR       ?= $(BOOT_TOPDIR)
 LZMA              ?= lzma -fkzc -7
-SOC               ?= hi3516a
-TEXTBASE          ?= 0x80700000
+SOC               ?= hi3536dv100
+TEXTBASE          ?= 0x88300000
 
 CC       := $(HW_CROSS_COMPILE)gcc
 LD       := $(HW_CROSS_COMPILE)ld
@@ -23,6 +23,7 @@ CFLAGS   := -O2 -g -fno-builtin -ffreestanding \
 	-I$(BOOT_OUTDIR)/include \
 	-I$(BOOT_TOPDIR)/arch/arm/include \
 	-I$(BOOT_TOPDIR)/arch/arm/cpu/armv7/$(SOC) \
+	-I$(BOOT_TOPDIR)/arch/arm/cpu/armv7/$(SOC)/hw_compressed \
 	-fno-pic -fno-common -ffixed-r8 \
 	-pipe -march=armv7-a -marm -mno-thumb-interwork -mabi=aapcs-linux \
 	-mno-unaligned-access -msoft-float -fno-aggressive-loop-optimizations \
@@ -35,31 +36,28 @@ UBOOT_Z_LDS := mini-boot.lds
 
 ################################################################################
 START := start.o
-COBJS := uart.o chip.o startup.o mmu.o cache_ops.o cache-cp15.o \
-	div0.o _divsi3.o _udivsi3.o \
-	lowlevel_init_v300.o lowlevel_init_svb.o \
-	ddrphy_training.o ddrphy_training_func.o ddrphy_training_print.o \
-	ddr_dataeye_training.o image_data.o
+COBJS := uart.o chip.o timer.o lowlevel_init_v300.o reg_init.o \
+	ddr_training_impl.o ddr_training_ctl.o ddr_training_boot.o \
+	ddr_training_custom.o startup.o div0.o _divsi3.o _udivsi3.o image_data.o
 
 SSRC  := arch/arm/cpu/armv7/$(SOC)/start.S \
 	arch/arm/cpu/armv7/$(SOC)/uart.S \
 	arch/arm/cpu/armv7/$(SOC)/chip.c \
-	arch/arm/cpu/armv7/$(SOC)/lowlevel_init.S \
 	arch/arm/cpu/armv7/$(SOC)/lowlevel_init_v300.c \
-	arch/arm/cpu/armv7/$(SOC)/lowlevel_init_svb.c \
-	arch/arm/cpu/armv7/$(SOC)/ddrphy_training.c \
-	arch/arm/cpu/armv7/$(SOC)/ddrphy_training_func.S \
-	arch/arm/cpu/armv7/$(SOC)/ddrphy_training_print.S \
-	arch/arm/cpu/armv7/$(SOC)/ddr_dataeye_training.c \
-	arch/arm/cpu/armv7/$(SOC)/ddr_dataeye_training.h \
+	arch/arm/cpu/armv7/$(SOC)/reg_init.c \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/timer.c \
 	arch/arm/cpu/armv7/$(SOC)/hw_compressed/startup.c \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_impl.c \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_ctl.c \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_boot.c \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_custom.c \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_impl.h \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_custom.h \
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/ddr_training_internal_config.h \
 	arch/arm/cpu/armv7/$(SOC)/hw_compressed/image_data.S \
-	arch/arm/cpu/armv7/$(SOC)/hw_compressed/mmu.S \
-	arch/arm/cpu/armv7/$(SOC)/hw_compressed/cache_ops.S \
-	arch/arm/cpu/armv7/$(SOC)/hw_compressed/cache-cp15.c \
 	arch/arm/cpu/armv7/$(SOC)/hw_compressed/div0.c \
 	arch/arm/cpu/armv7/$(SOC)/hw_compressed/_divsi3.S \
-	arch/arm/cpu/armv7/$(SOC)/hw_compressed/_udivsi3.S
+	arch/arm/cpu/armv7/$(SOC)/hw_compressed/_udivsi3.S \
 
 SRC := $(notdir $(SSRC))
 
